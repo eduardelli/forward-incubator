@@ -13,6 +13,7 @@ begin
      and cu.v_status = 'A';
     if p_user = 0 then
        raise_application_error(-20020, 'Пользователь не найден');
+       end if;
 
   case
     when pACTION = 1 then
