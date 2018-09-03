@@ -9,10 +9,10 @@ begin
    cu.id_user
     into p_user
     from ci_users cu
-   where cu.id_user = pID_MANAGER;
-  /*  íóæíî êàê-òî ïðîâåðèòü ýòî óñëîâèå        
-  when no_data_faund then
-    raise_application_error(-20020, 'Ïîëüçîâàòåëü íå íàéäåí'); */
+   where cu.id_user = pID_MANAGER
+     and cu.v_status = 'A';
+    if p_user = 0 then
+       raise_application_error(-20020, 'Пользователь не найден');
 
   case
     when pACTION = 1 then
@@ -29,9 +29,6 @@ begin
       where ID_MANAGER = pID_MANAGER;
   end case;
 exception
-  when no_data_found then
-    raise_application_error(-20020,
-                            'Пользователь не найден');
   when others then
     raise_application_error(-20020,
                             'Пользователь ' || pACTION || ' существует');
