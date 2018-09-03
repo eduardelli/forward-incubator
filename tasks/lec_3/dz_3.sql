@@ -10,9 +10,9 @@ begin
     into p_user
     from ci_users cu
    where cu.id_user = pID_MANAGER;
-  /*  нужно как-то проверить это условие        
+  /*  Г­ГіГ¦Г­Г® ГЄГ ГЄ-ГІГ® ГЇГ°Г®ГўГҐГ°ГЁГІГј ГЅГІГ® ГіГ±Г«Г®ГўГЁГҐ        
   when no_data_faund then
-    raise_application_error(-20020, 'Пользователь не найден'); */
+    raise_application_error(-20020, 'ГЏГ®Г«ГјГ§Г®ГўГ ГІГҐГ«Гј Г­ГҐ Г­Г Г©Г¤ГҐГ­'); */
 
   case
     when pACTION = 1 then
@@ -21,25 +21,28 @@ begin
       values
         (pV_FIO, pID_MANAGER);
     when pACTION = 2 then
-      update scd_signers set V_FIO = pV_FIO where ID_MANAGER = pID_MANAGER;
+      update scd_signers 
+         set V_FIO = pV_FIO 
+       where ID_MANAGER = pID_MANAGER;
     when pACTION = 3 then
-      delete from scd_signers where ID_MANAGER = pID_MANAGER;
+      delete from scd_signers 
+      where ID_MANAGER = pID_MANAGER;
   end case;
 exception
   when no_data_found then
     raise_application_error(-20020,
-                            'Пользователь не найден');
+                            'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ');
   when others then
     raise_application_error(-20020,
-                            'Пользователь ' || pACTION || ' существует');
+                            'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ ' || pACTION || ' СЃСѓС‰РµСЃС‚РІСѓРµС‚');
 end saveSigners;
 -----
 --2
-/*Реализовать функцию getDecoder, принимающий на вход id_equip_kits_inst. 
-В случае, если в scd_equip_kits у актуальной записи проставлен контракт, 
-у которого в scd_contracts проставлен признак b_agency = 1, 
-тогда вернуть scd_equip_kits.v_cas_id, иначе scd_equip_kits.v_ext_ident. 
-Если оборудование не найдено, то выдать ошибку «Оборудование не найдено».
+/*Р РµР°Р»РёР·РѕРІР°С‚СЊ С„СѓРЅРєС†РёСЋ getDecoder, РїСЂРёРЅРёРјР°СЋС‰РёР№ РЅР° РІС…РѕРґ id_equip_kits_inst. 
+Р’ СЃР»СѓС‡Р°Рµ, РµСЃР»Рё РІ scd_equip_kits Сѓ Р°РєС‚СѓР°Р»СЊРЅРѕР№ Р·Р°РїРёСЃРё РїСЂРѕСЃС‚Р°РІР»РµРЅ РєРѕРЅС‚СЂР°РєС‚, 
+Сѓ РєРѕС‚РѕСЂРѕРіРѕ РІ scd_contracts РїСЂРѕСЃС‚Р°РІР»РµРЅ РїСЂРёР·РЅР°Рє b_agency = 1, 
+С‚РѕРіРґР° РІРµСЂРЅСѓС‚СЊ scd_equip_kits.v_cas_id, РёРЅР°С‡Рµ scd_equip_kits.v_ext_ident. 
+Р•СЃР»Рё РѕР±РѕСЂСѓРґРѕРІР°РЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ, С‚Рѕ РІС‹РґР°С‚СЊ РѕС€РёР±РєСѓ В«РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕВ».
 */
 create or replace function getDecoder(d_kits_inst in scd_equip_kits.id_equip_kits_inst%type)
   return varchar2 is
@@ -50,8 +53,13 @@ create or replace function getDecoder(d_kits_inst in scd_equip_kits.id_equip_kit
 begin
   begin
     select --
-     k.v_cas_id, k.v_ext_ident, c.b_agency
-      into dv_cas_id, dv_ext_ident, db_agency
+        k.v_cas_id, 
+        k.v_ext_ident, 
+        c.b_agency
+      into 
+        dv_cas_id, 
+        dv_ext_ident, 
+        db_agency
       from scd_equip_kits k
       join scd_contracts c
         on c.id_contract_inst = k.id_contract_inst
@@ -69,21 +77,21 @@ begin
 exception
   when no_data_found then
     raise_application_error(-20020,
-                            'Оборудование не найдено');
+                            'РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ');
   when others then
     raise_application_error(-20020,
-                            'Неизведанная ошибка');
+                            'РќРµРёР·РІРµРґР°РЅРЅР°СЏ РѕС€РёР±РєР°');
 end getDecoder;
 -------------------------
 --3.
-/*Реализовать процедуру getEquip, принимающую на вход pID_EQUIP_KITS_INST default null
-и отдающую(out) sys_refcursor. В процедуре с помощью конструкции OPEN...FOR 
-реализовать наполнение курсора следующими данными: 
-Наименование клиента, логин клиента, идентификатор контракта, наименование комплекта, 
-номер декодера(использовать функцию getDecoder). 
-В случае, если pID_EQUIP_KITS_INST is null, тогда все имеющиеся данные, 
-иначе только строчку с данным pID_EQUIP_KITS_INST. 
-Каждому scd_equip_kits.id_equip_kits_inst соответствует одна строчка курсора.*/
+/*Р РµР°Р»РёР·РѕРІР°С‚СЊ РїСЂРѕС†РµРґСѓСЂСѓ getEquip, РїСЂРёРЅРёРјР°СЋС‰СѓСЋ РЅР° РІС…РѕРґ pID_EQUIP_KITS_INST default null
+Рё РѕС‚РґР°СЋС‰СѓСЋ(out) sys_refcursor. Р’ РїСЂРѕС†РµРґСѓСЂРµ СЃ РїРѕРјРѕС‰СЊСЋ РєРѕРЅСЃС‚СЂСѓРєС†РёРё OPEN...FOR 
+СЂРµР°Р»РёР·РѕРІР°С‚СЊ РЅР°РїРѕР»РЅРµРЅРёРµ РєСѓСЂСЃРѕСЂР° СЃР»РµРґСѓСЋС‰РёРјРё РґР°РЅРЅС‹РјРё: 
+РќР°РёРјРµРЅРѕРІР°РЅРёРµ РєР»РёРµРЅС‚Р°, Р»РѕРіРёРЅ РєР»РёРµРЅС‚Р°, РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РєРѕРЅС‚СЂР°РєС‚Р°, РЅР°РёРјРµРЅРѕРІР°РЅРёРµ РєРѕРјРїР»РµРєС‚Р°, 
+РЅРѕРјРµСЂ РґРµРєРѕРґРµСЂР°(РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ С„СѓРЅРєС†РёСЋ getDecoder). 
+Р’ СЃР»СѓС‡Р°Рµ, РµСЃР»Рё pID_EQUIP_KITS_INST is null, С‚РѕРіРґР° РІСЃРµ РёРјРµСЋС‰РёРµСЃСЏ РґР°РЅРЅС‹Рµ, 
+РёРЅР°С‡Рµ С‚РѕР»СЊРєРѕ СЃС‚СЂРѕС‡РєСѓ СЃ РґР°РЅРЅС‹Рј pID_EQUIP_KITS_INST. 
+РљР°Р¶РґРѕРјСѓ scd_equip_kits.id_equip_kits_inst СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ РѕРґРЅР° СЃС‚СЂРѕС‡РєР° РєСѓСЂСЃРѕСЂР°.*/
 
 create or replace procedure getEquip(pID_EQUIP_KITS_INST in scd_equip_kits.id_equip_kits_inst%type,
                                      dwr                 out sys_refcursor) is
@@ -143,25 +151,28 @@ begin
 
 end getEquip;
 ------------------------------
---4. тут не работает из-за соединения в джоинах по id_rec
-/*Реализовать с помощью цикла по курсору процедуру checkstatus. 
-Процедура должна для записей, у которых scd_equip_kits.id_dealer_client не null, 
-но статус отличный от Продано(scd_equipment_status) проставить статус Продано. 
-Кроме того, вывести в dbms_output.put_line информацию в виде: 
-"Для оборудования scd_equip_kits.id_equip_kits_inst дилера fw_clients.v_long_tittle 
-с контрактом fw_contracts.v_ext_ident, 
-являющегося(если scd_contracts.b_agency = 1)/неявляющегося(если scd_contracts.b_agency = 0) 
-агентской сетью был проставлен статус Продано."*/
+--4. С‚СѓС‚ РЅРµ СЂР°Р±РѕС‚Р°РµС‚ РёР·-Р·Р° СЃРѕРµРґРёРЅРµРЅРёСЏ РІ РґР¶РѕРёРЅР°С… РїРѕ id_rec
+/*Р РµР°Р»РёР·РѕРІР°С‚СЊ СЃ РїРѕРјРѕС‰СЊСЋ С†РёРєР»Р° РїРѕ РєСѓСЂСЃРѕСЂСѓ РїСЂРѕС†РµРґСѓСЂСѓ checkstatus. 
+РџСЂРѕС†РµРґСѓСЂР° РґРѕР»Р¶РЅР° РґР»СЏ Р·Р°РїРёСЃРµР№, Сѓ РєРѕС‚РѕСЂС‹С… scd_equip_kits.id_dealer_client РЅРµ null, 
+РЅРѕ СЃС‚Р°С‚СѓСЃ РѕС‚Р»РёС‡РЅС‹Р№ РѕС‚ РџСЂРѕРґР°РЅРѕ(scd_equipment_status) РїСЂРѕСЃС‚Р°РІРёС‚СЊ СЃС‚Р°С‚СѓСЃ РџСЂРѕРґР°РЅРѕ. 
+РљСЂРѕРјРµ С‚РѕРіРѕ, РІС‹РІРµСЃС‚Рё РІ dbms_output.put_line РёРЅС„РѕСЂРјР°С†РёСЋ РІ РІРёРґРµ: 
+"Р”Р»СЏ РѕР±РѕСЂСѓРґРѕРІР°РЅРёСЏ scd_equip_kits.id_equip_kits_inst РґРёР»РµСЂР° fw_clients.v_long_tittle 
+СЃ РєРѕРЅС‚СЂР°РєС‚РѕРј fw_contracts.v_ext_ident, 
+СЏРІР»СЏСЋС‰РµРіРѕСЃСЏ(РµСЃР»Рё scd_contracts.b_agency = 1)/РЅРµСЏРІР»СЏСЋС‰РµРіРѕСЃСЏ(РµСЃР»Рё scd_contracts.b_agency = 0) 
+Р°РіРµРЅС‚СЃРєРѕР№ СЃРµС‚СЊСЋ Р±С‹Р» РїСЂРѕСЃС‚Р°РІР»РµРЅ СЃС‚Р°С‚СѓСЃ РџСЂРѕРґР°РЅРѕ."*/
 
-create or replace procedure checkstatus is -- ничего не нужно на вход
+create or replace procedure checkstatus is -- РЅРёС‡РµРіРѕ РЅРµ РЅСѓР¶РЅРѕ РЅР° РІС…РѕРґ
 begin
-  for i in (select -- находим условия и идем по ним циклом
-             k.id_equip_kits_inst, c.v_long_title, t.v_ext_ident, r.b_agency
+  for i in (select -- РЅР°С…РѕРґРёРј СѓСЃР»РѕРІРёСЏ Рё РёРґРµРј РїРѕ РЅРёРј С†РёРєР»РѕРј
+                k.id_equip_kits_inst, 
+                c.v_long_title, 
+                t.v_ext_ident, 
+                r.b_agency
             
               from scd_equip_kits k
               join scd_equipment_status s
                 on s.id_equipment_status = k.id_status
-               and s.v_name != 'Продано'
+               and s.v_name != 'РџСЂРѕРґР°РЅРѕ'
                and s.b_deleted = 0
               join fw_contracts t
                 on t.id_contract_inst = k.id_contract_inst
@@ -178,25 +189,25 @@ begin
                and k.dt_start <= current_timestamp
                and k.id_dealer_client is not null) loop
     update scd_equipment_status st
-       set v_name = 'Продано'
-     where v_name != 'Продано';
+       set v_name = 'РџСЂРѕРґР°РЅРѕ'
+     where v_name != 'РџСЂРѕРґР°РЅРѕ';
   
     if i.b_agency = 1 then
-      dbms_output.put_line('"Для оборудования ' || i.id_equip_kits_inst ||
-                           ' дилера ' || i.v_long_title ||
-                           ' с контрактом ' || i.v_ext_ident ||
-                           ', являющегося агентской сетью был проставлен статус Продано."');
+      dbms_output.put_line('"Р”Р»СЏ РѕР±РѕСЂСѓРґРѕРІР°РЅРёСЏ ' || i.id_equip_kits_inst ||
+                           ' РґРёР»РµСЂР° ' || i.v_long_title ||
+                           ' СЃ РєРѕРЅС‚СЂР°РєС‚РѕРј ' || i.v_ext_ident ||
+                           ', СЏРІР»СЏСЋС‰РµРіРѕСЃСЏ Р°РіРµРЅС‚СЃРєРѕР№ СЃРµС‚СЊСЋ Р±С‹Р» РїСЂРѕСЃС‚Р°РІР»РµРЅ СЃС‚Р°С‚СѓСЃ РџСЂРѕРґР°РЅРѕ."');
     else
-      dbms_output.put_line('"Для оборудования ' || i.id_equip_kits_inst ||
-                           ' дилера ' || i.v_long_title ||
-                           ' с контрактом ' || i.v_ext_ident ||
-                           ', не являющегося агентской сетью был проставлен статус Продано."');
+      dbms_output.put_line('"Р”Р»СЏ РѕР±РѕСЂСѓРґРѕРІР°РЅРёСЏ ' || i.id_equip_kits_inst ||
+                           ' РґРёР»РµСЂР° ' || i.v_long_title ||
+                           ' СЃ РєРѕРЅС‚СЂР°РєС‚РѕРј ' || i.v_ext_ident ||
+                           ', РЅРµ СЏРІР»СЏСЋС‰РµРіРѕСЃСЏ Р°РіРµРЅС‚СЃРєРѕР№ СЃРµС‚СЊСЋ Р±С‹Р» РїСЂРѕСЃС‚Р°РІР»РµРЅ СЃС‚Р°С‚СѓСЃ РџСЂРѕРґР°РЅРѕ."');
     end if;
   end loop;
 
   /*   exception 
   when others then
-    raise_application_error(-20020, 'Неизведданная ошибка');  */
+    raise_application_error(-20020, 'ГЌГҐГЁГ§ГўГҐГ¤Г¤Г Г­Г­Г Гї Г®ГёГЁГЎГЄГ ');  */
 end;
 
  
