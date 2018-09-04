@@ -146,6 +146,7 @@ begin
          and c.dt_start <= current_timestamp
          and k.id_equip_kits_type = '||pID_EQUIP_KITS_INST||';
   end if;
+  close dwr;
 
 end getEquip;
 ------------------------------
